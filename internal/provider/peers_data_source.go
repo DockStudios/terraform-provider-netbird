@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -268,6 +269,24 @@ func (d *PeersDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 	// }
 
 	endpoint := fmt.Sprintf("%s/api/peers", d.client.BaseUrl)
+
+	// Initialize a query parameter map
+	queryParams := url.Values{}
+
+	// Check if "name" is provided and add it as a query parameter
+	if !data.Name.IsNull() && !data.Name.IsUnknown() {
+		queryParams.Add("name", data.Name.ValueString())
+	}
+
+	// Check if "ip" is provided and add it as a query parameter
+	if !data.IP.IsNull() && !data.IP.IsUnknown() {
+		queryParams.Add("ip", data.IP.ValueString())
+	}
+
+	// If query parameters exist, append them to the endpoint
+	if len(queryParams) > 0 {
+		endpoint = fmt.Sprintf("%s?%s", endpoint, queryParams.Encode())
+	}
 
 	reqHTTP, err := http.NewRequest("GET", endpoint, nil)
 	if err != nil {
