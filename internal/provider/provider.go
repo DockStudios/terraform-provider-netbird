@@ -128,6 +128,7 @@ func (p *NetbirdProvider) EphemeralResources(ctx context.Context) []func() ephem
 func (p *NetbirdProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		NewPeersDataSource,
+		NewPeerDataSource,
 	}
 }
 
