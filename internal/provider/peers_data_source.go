@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	netbirdApi "github.com/netbirdio/netbird/management/server/http/api"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
@@ -28,40 +29,40 @@ type PeersDataSource struct {
 }
 
 type PeerDataSourceModel struct {
-	ID                          types.String               `tfsdk:"id"`
-	Name                        types.String               `tfsdk:"name"`
-	IP                          types.String               `tfsdk:"ip"`
-	ConnectionIP                types.String               `tfsdk:"connection_ip"`
-	Connected                   types.Bool                 `tfsdk:"connected"`
-	LastSeen                    types.String               `tfsdk:"last_seen"`
-	OS                          types.String               `tfsdk:"os"`
-	KernelVersion               types.String               `tfsdk:"kernel_version"`
-	GeonameID                   types.Int64                `tfsdk:"geoname_id"`
-	Version                     types.String               `tfsdk:"version"`
-	Groups                      []PeerGroupDataSourceModel `tfsdk:"groups"`
-	SSHEnabled                  types.Bool                 `tfsdk:"ssh_enabled"`
-	UserID                      types.String               `tfsdk:"user_id"`
-	Hostname                    types.String               `tfsdk:"hostname"`
-	UIVersion                   types.String               `tfsdk:"ui_version"`
-	DNSLabel                    types.String               `tfsdk:"dns_label"`
-	LoginExpirationEnabled      types.Bool                 `tfsdk:"login_expiration_enabled"`
-	LoginExpired                types.Bool                 `tfsdk:"login_expired"`
-	LastLogin                   types.String               `tfsdk:"last_login"`
-	InactivityExpirationEnabled types.Bool                 `tfsdk:"inactivity_expiration_enabled"`
-	ApprovalRequired            types.Bool                 `tfsdk:"approval_required"`
-	CountryCode                 types.String               `tfsdk:"country_code"`
-	CityName                    types.String               `tfsdk:"city_name"`
-	SerialNumber                types.String               `tfsdk:"serial_number"`
-	ExtraDNSLabels              []types.String             `tfsdk:"extra_dns_labels"`
-	AccessiblePeersCount        types.Int64                `tfsdk:"accessible_peers_count"`
+	ID                          types.String               `tfsdk:"id" json:"id"`
+	Name                        types.String               `tfsdk:"name" json:"name"`
+	IP                          types.String               `tfsdk:"ip" json:"ip"`
+	ConnectionIP                types.String               `tfsdk:"connection_ip" json:"connection_ip"`
+	Connected                   types.Bool                 `tfsdk:"connected" json:"connected"`
+	LastSeen                    types.String               `tfsdk:"last_seen" json:"last_seen"`
+	OS                          types.String               `tfsdk:"os" json:"os"`
+	KernelVersion               types.String               `tfsdk:"kernel_version" json:"kernel_version"`
+	GeonameID                   types.Int64                `tfsdk:"geoname_id" json:"geoname_id"`
+	Version                     types.String               `tfsdk:"version" json:"version"`
+	Groups                      []PeerGroupDataSourceModel `tfsdk:"groups" json:"groups"`
+	SSHEnabled                  types.Bool                 `tfsdk:"ssh_enabled" json:"ssh_enabled"`
+	UserID                      types.String               `tfsdk:"user_id" json:"user_id"`
+	Hostname                    types.String               `tfsdk:"hostname" json:"hostname"`
+	UIVersion                   types.String               `tfsdk:"ui_version" json:"ui_version"`
+	DNSLabel                    types.String               `tfsdk:"dns_label" json:"dns_label"`
+	LoginExpirationEnabled      types.Bool                 `tfsdk:"login_expiration_enabled" json:"login_expiration_enabled"`
+	LoginExpired                types.Bool                 `tfsdk:"login_expired" json:"login_expired"`
+	LastLogin                   types.String               `tfsdk:"last_login" json:"last_login"`
+	InactivityExpirationEnabled types.Bool                 `tfsdk:"inactivity_expiration_enabled" json:"inactivity_expiration_enabled"`
+	ApprovalRequired            types.Bool                 `tfsdk:"approval_required" json:"approval_required"`
+	CountryCode                 types.String               `tfsdk:"country_code" json:"country_code"`
+	CityName                    types.String               `tfsdk:"city_name" json:"city_name"`
+	SerialNumber                types.String               `tfsdk:"serial_number" json:"serial_number"`
+	ExtraDNSLabels              []types.String             `tfsdk:"extra_dns_labels" json:"extra_dns_labels"`
+	AccessiblePeersCount        types.Int64                `tfsdk:"accessible_peers_count" json:"accessible_peers_count"`
 }
 
 type PeerGroupDataSourceModel struct {
-	ID             types.String `tfsdk:"id"`
-	Name           types.String `tfsdk:"name"`
-	PeersCount     types.Int64  `tfsdk:"peers_count"`
-	ResourcesCount types.Int64  `tfsdk:"resources_count"`
-	Issued         types.String `tfsdk:"issued"`
+	ID             types.String `tfsdk:"id" json:"id"`
+	Name           types.String `tfsdk:"name" json:"name"`
+	PeersCount     types.Int64  `tfsdk:"peers_count" json:"peers_count"`
+	ResourcesCount types.Int64  `tfsdk:"resources_count" json:"resources_count"`
+	Issued         types.String `tfsdk:"issued" json:"issued"`
 }
 
 type PeersDataSourceModel struct {
@@ -280,22 +281,76 @@ func (d *PeersDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 		return
 	}
 
-	// @TODO Unmarhel into netbird models
-	tflog.Info(ctx, "Configuring HashiCups client: "+string(body[:]))
-	var peers []PeerDataSourceModel
-	if err := json.Unmarshal(body, &peers); err != nil {
+	tflog.Info(ctx, "Obtained peers data source response: "+string(body[:]))
+	var peerBatchList []netbirdApi.PeerBatch
+	if err := json.Unmarshal(body, &peerBatchList); err != nil {
 		resp.Diagnostics.AddError("Error Parsing API Response", err.Error())
 		return
 	}
 
-	// // For the purposes of this example code, hardcoding a response value to
-	// // save into the Terraform state.
-	// data.Id = types.StringValue("example-id")
+	var peers []PeerDataSourceModel
+	for _, peerBatch := range peerBatchList {
+		peer := PeerDataSourceModel{
+			ID:                          types.StringValue(peerBatch.Id),
+			Name:                        types.StringValue(peerBatch.Name),
+			IP:                          types.StringValue(peerBatch.Ip),
+			ConnectionIP:                types.StringValue(peerBatch.ConnectionIp),
+			Connected:                   types.BoolValue(peerBatch.Connected),
+			LastSeen:                    types.StringValue(peerBatch.LastSeen.String()),
+			OS:                          types.StringValue(peerBatch.Os),
+			KernelVersion:               types.StringValue(peerBatch.KernelVersion),
+			GeonameID:                   types.Int64Value(int64(peerBatch.GeonameId)),
+			Version:                     types.StringValue(peerBatch.Version),
+			Groups:                      convertPeerGroups(peerBatch.Groups), // Helper function to convert groups
+			SSHEnabled:                  types.BoolValue(peerBatch.SshEnabled),
+			UserID:                      types.StringValue(peerBatch.UserId),
+			Hostname:                    types.StringValue(peerBatch.Hostname),
+			UIVersion:                   types.StringValue(peerBatch.UiVersion),
+			DNSLabel:                    types.StringValue(peerBatch.DnsLabel),
+			LoginExpirationEnabled:      types.BoolValue(peerBatch.LoginExpirationEnabled),
+			LoginExpired:                types.BoolValue(peerBatch.LoginExpired),
+			LastLogin:                   types.StringValue(peerBatch.LastLogin.String()),
+			InactivityExpirationEnabled: types.BoolValue(peerBatch.InactivityExpirationEnabled),
+			ApprovalRequired:            types.BoolValue(peerBatch.ApprovalRequired),
+			CountryCode:                 types.StringValue(peerBatch.CountryCode),
+			CityName:                    types.StringValue(peerBatch.CityName),
+			SerialNumber:                types.StringValue(peerBatch.SerialNumber),
+			ExtraDNSLabels:              convertStrings(peerBatch.ExtraDnsLabels), // Convert list of strings
+			AccessiblePeersCount:        types.Int64Value(int64(peerBatch.AccessiblePeersCount)),
+		}
+		peers = append(peers, peer)
+	}
+	data.Peers = peers
 
-	// Write logs using the tflog package
-	// Documentation: https://terraform.io/plugin/log
-	tflog.Trace(ctx, "read a data source")
-
-	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+// Helper function to convert PeerGroupBatch to PeerGroupDataSourceModel
+func convertPeerGroups(groups []netbirdApi.GroupMinimum) []PeerGroupDataSourceModel {
+	var convertedGroups []PeerGroupDataSourceModel
+	for _, group := range groups {
+		// Check if group.Issued is nil before dereferencing
+		issued := ""
+		if group.Issued != nil {
+			issued = string(*group.Issued) // Safely dereference
+		}
+		convertedGroup := PeerGroupDataSourceModel{
+			ID:             types.StringValue(group.Id),
+			Name:           types.StringValue(group.Name),
+			PeersCount:     types.Int64Value(int64(group.PeersCount)),
+			ResourcesCount: types.Int64Value(int64(group.ResourcesCount)),
+			Issued:         types.StringValue(issued),
+		}
+		convertedGroups = append(convertedGroups, convertedGroup)
+	}
+	return convertedGroups
+}
+
+// Helper function to convert []string to []types.String
+func convertStrings(input []string) []types.String {
+	var output []types.String
+	for _, str := range input {
+		output = append(output, types.StringValue(str))
+	}
+	return output
 }
