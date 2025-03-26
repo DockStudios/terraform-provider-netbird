@@ -115,7 +115,7 @@ func (p *NetbirdProvider) Configure(ctx context.Context, req provider.ConfigureR
 
 func (p *NetbirdProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		// NewExampleResource,
+		NewNetworkResource,
 	}
 }
 
