@@ -285,7 +285,7 @@ func (r *NetworkRouterResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	reqURL := fmt.Sprintf("%s/api/networks/%s", r.client.BaseUrl, data.ID.ValueString())
+	reqURL := fmt.Sprintf("%s/api/networks/%s/routers/%s", r.client.BaseUrl, data.NetworkId.ValueString(), data.ID.ValueString())
 	httpReq, err := http.NewRequest("PUT", reqURL, bytes.NewBuffer(requestBody))
 	if err != nil {
 		resp.Diagnostics.AddError("Error creating request", err.Error())
@@ -319,7 +319,7 @@ func (r *NetworkRouterResource) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
-	reqURL := fmt.Sprintf("%s/api/networks/%s", r.client.BaseUrl, data.ID.ValueString())
+	reqURL := fmt.Sprintf("%s/api/networks/%s/routers/%s", r.client.BaseUrl, data.NetworkId.ValueString(), data.ID.ValueString())
 	httpReq, err := http.NewRequest("DELETE", reqURL, nil)
 	if err != nil {
 		resp.Diagnostics.AddError("Error creating request", err.Error())
