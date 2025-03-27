@@ -43,6 +43,10 @@ func (s *Client) doRequest(req *http.Request) ([]byte, error) {
 		return nil, err
 	}
 
+	if resp.StatusCode == 404 {
+		return nil, nil
+	}
+
 	if resp.StatusCode >= 400 {
 		return nil, fmt.Errorf("%s", body)
 	}

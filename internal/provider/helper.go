@@ -1,6 +1,8 @@
 package provider
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	netbirdApi "github.com/netbirdio/netbird/management/server/http/api"
 )
@@ -26,6 +28,7 @@ func convertPeerGroups(groups []netbirdApi.GroupMinimum) []PeerGroupDataSourceMo
 	return convertedGroups
 }
 
+// @TODO  Remove this
 // Helper function to convert []string to []types.String
 func convertStrings(input []string) []types.String {
 	var output []types.String
@@ -33,4 +36,39 @@ func convertStrings(input []string) []types.String {
 		output = append(output, types.StringValue(str))
 	}
 	return output
+}
+
+func derefString(input *string) types.String {
+	if input == nil {
+		return types.StringNull()
+	}
+	return types.StringValue(*input)
+}
+
+func derefStringSlice(s *[]string) []string {
+	if s == nil {
+		return nil
+	}
+	return *s
+}
+
+// @TODO Delete this
+func stringSliceToTerraform(apiValues []string) []types.String {
+	var result []types.String
+	for _, v := range apiValues {
+		result = append(result, types.StringValue(v))
+	}
+	return result
+}
+
+func convertStringSliceToListValue(strings []string) (types.List, diag.Diagnostics) {
+	var stringValueList []attr.Value
+	for _, val := range strings {
+		stringValueList = append(stringValueList, types.StringValue(val))
+	}
+	listValue, diags := types.ListValue(types.StringType, stringValueList)
+	if diags.HasError() {
+		return types.ListNull(types.StringType), diags
+	}
+	return listValue, diags
 }

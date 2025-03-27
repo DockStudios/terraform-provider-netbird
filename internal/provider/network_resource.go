@@ -212,6 +212,7 @@ func (r *NetworkResource) readIntoModel(ctx context.Context, data *NetworkResour
 	}
 	// Update state with latest data
 	data.Name = types.StringValue(responseData.Name)
+
 	// Only update if either (or both) data and response data have a non-empty description value
 	if (responseData.Description != nil && (*responseData.Description) != string("")) || data.Description.ValueString() != "" {
 		if responseData.Description != nil {
@@ -223,17 +224,17 @@ func (r *NetworkResource) readIntoModel(ctx context.Context, data *NetworkResour
 	data.RoutingPeersCount = types.Int64Value(int64(responseData.RoutingPeersCount))
 
 	routers := responseData.Routers
-	routersModel, diags := types.ListValueFrom(ctx, types.StringType, routers)
+	routersModel, newDiags := types.ListValueFrom(ctx, types.StringType, routers)
+	diags.Append(newDiags...)
 	data.Routers = routersModel
-	diags.Append(diags...)
 
 	resources := responseData.Resources
-	data.Resources, diags = types.ListValueFrom(ctx, types.StringType, resources)
-	diags.Append(diags...)
+	data.Resources, newDiags = types.ListValueFrom(ctx, types.StringType, resources)
+	diags.Append(newDiags...)
 
 	policies := responseData.Policies
-	data.Policies, diags = types.ListValueFrom(ctx, types.StringType, policies)
-	diags.Append(diags...)
+	data.Policies, newDiags = types.ListValueFrom(ctx, types.StringType, policies)
+	diags.Append(newDiags...)
 
 	return diags
 }

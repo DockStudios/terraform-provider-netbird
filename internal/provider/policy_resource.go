@@ -233,7 +233,7 @@ func (r *PolicyResource) Configure(ctx context.Context, req resource.ConfigureRe
 	r.client = client
 }
 
-func convertToRulesResourcesApiModel(ctx context.Context, modelResource *ResourceModel) (*netbirdApi.Resource, diag.Diagnostics) {
+func convertToRulesResourcesApiModel(modelResource *ResourceModel) (*netbirdApi.Resource, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if modelResource == nil {
 		return nil, diags
@@ -244,7 +244,7 @@ func convertToRulesResourcesApiModel(ctx context.Context, modelResource *Resourc
 	}, diags
 }
 
-func convertToRulesPortRangesApiModel(ctx context.Context, modelRanges *[]PortRangeModel) ([]netbirdApi.RulePortRange, diag.Diagnostics) {
+func convertToRulesPortRangesApiModel(modelRanges *[]PortRangeModel) ([]netbirdApi.RulePortRange, diag.Diagnostics) {
 	var portRanges []netbirdApi.RulePortRange
 	var diags diag.Diagnostics
 
@@ -262,7 +262,7 @@ func convertToRulesPortRangesApiModel(ctx context.Context, modelRanges *[]PortRa
 	return portRanges, diags
 }
 
-func convertToRulesUpdateApiModel(ctx context.Context, modelRules *[]PolicyRuleModel) ([]netbirdApi.PolicyRuleUpdate, diag.Diagnostics) {
+func convertToRulesUpdateApiModel(modelRules *[]PolicyRuleModel) ([]netbirdApi.PolicyRuleUpdate, diag.Diagnostics) {
 	var apiRules []netbirdApi.PolicyRuleUpdate
 	if modelRules == nil {
 		return apiRules, nil
@@ -270,24 +270,25 @@ func convertToRulesUpdateApiModel(ctx context.Context, modelRules *[]PolicyRuleM
 	var diags diag.Diagnostics
 	for _, modelRule := range *modelRules {
 
-		ports, diags := convertListToStringSlice(modelRule.Ports)
-		diags.Append(diags...)
+		ports, newDiags := convertListToStringSlice(modelRule.Ports)
+		diags.Append(newDiags...)
 		if diags.HasError() {
 			return apiRules, diags
 		}
 
-		portRanges, diags := convertToRulesPortRangesApiModel(ctx, &modelRule.PortRanges)
+		portRanges, newDiags := convertToRulesPortRangesApiModel(&modelRule.PortRanges)
+		diags.Append(newDiags...)
 		if diags.HasError() {
 			return apiRules, diags
 		}
 
-		sources, diags := convertListToStringSlice(modelRule.Sources)
-		diags.Append(diags...)
+		sources, newDiags := convertListToStringSlice(modelRule.Sources)
+		diags.Append(newDiags...)
 		if diags.HasError() {
 			return apiRules, diags
 		}
 
-		sourceResource, diags := convertToRulesResourcesApiModel(ctx, modelRule.SourceResource)
+		sourceResource, diags := convertToRulesResourcesApiModel(modelRule.SourceResource)
 		if diags.HasError() {
 			return apiRules, diags
 		}
@@ -297,7 +298,7 @@ func convertToRulesUpdateApiModel(ctx context.Context, modelRules *[]PolicyRuleM
 			return apiRules, diags
 		}
 
-		destinationResource, diags := convertToRulesResourcesApiModel(ctx, modelRule.SourceResource)
+		destinationResource, diags := convertToRulesResourcesApiModel(modelRule.SourceResource)
 		if diags.HasError() {
 			return apiRules, diags
 		}
@@ -320,40 +321,6 @@ func convertToRulesUpdateApiModel(ctx context.Context, modelRules *[]PolicyRuleM
 	}
 
 	return apiRules, diags
-}
-
-func derefString(input *string) types.String {
-	if input == nil {
-		return types.StringNull()
-	}
-	return types.StringValue(*input)
-}
-
-func stringSliceToTerraform(apiValues []string) []types.String {
-	var result []types.String
-	for _, v := range apiValues {
-		result = append(result, types.StringValue(v))
-	}
-	return result
-}
-
-func convertStringSliceToListValue(strings []string) (types.List, diag.Diagnostics) {
-	var stringValueList []attr.Value
-	for _, val := range strings {
-		stringValueList = append(stringValueList, types.StringValue(val))
-	}
-	listValue, diags := types.ListValue(types.StringType, stringValueList)
-	if diags.HasError() {
-		return types.ListNull(types.StringType), diags
-	}
-	return listValue, diags
-}
-
-func derefStringSlice(s *[]string) []string {
-	if s == nil {
-		return nil
-	}
-	return *s
 }
 
 func convertResourceModel(resource *netbirdApi.Resource) *ResourceModel {
@@ -395,7 +362,7 @@ func convertGroupMinimumToIdList(groupList *[]netbirdApi.GroupMinimum) (types.Li
 	return convertStringSliceToListValue(idList)
 }
 
-func convertRulesFromAPI(ctx context.Context, data *[]netbirdApi.PolicyRule) ([]PolicyRuleModel, diag.Diagnostics) {
+func convertRulesFromAPI(data *[]netbirdApi.PolicyRule) ([]PolicyRuleModel, diag.Diagnostics) {
 	var rules []PolicyRuleModel
 	var diags diag.Diagnostics
 
@@ -440,7 +407,7 @@ func convertRulesFromAPI(ctx context.Context, data *[]netbirdApi.PolicyRule) ([]
 	return rules, diags
 }
 
-func convertPolicyFromApiModel(ctx context.Context, data netbirdApi.Policy) (PolicyModel, diag.Diagnostics) {
+func convertPolicyFromApiModel(data netbirdApi.Policy) (PolicyModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var policyModel PolicyModel
 
@@ -459,7 +426,7 @@ func convertPolicyFromApiModel(ctx context.Context, data netbirdApi.Policy) (Pol
 	}
 	policyModel.SourcePostureChecks = sourcePostureChecksListValue
 
-	rules, diags := convertRulesFromAPI(ctx, &data.Rules)
+	rules, diags := convertRulesFromAPI(&data.Rules)
 	if diags.HasError() {
 		return policyModel, diags
 	}
@@ -508,7 +475,7 @@ func (r *PolicyResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	rules, diags := convertToRulesUpdateApiModel(ctx, &data.Rules)
+	rules, diags := convertToRulesUpdateApiModel(&data.Rules)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -546,7 +513,7 @@ func (r *PolicyResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	data, diags = convertPolicyFromApiModel(ctx, createdPolicy)
+	data, diags = convertPolicyFromApiModel(createdPolicy)
 	resp.Diagnostics.Append(diags...)
 	if diags.HasError() {
 		return
@@ -586,7 +553,7 @@ func (r *PolicyResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	data, diags := convertPolicyFromApiModel(ctx, responseData)
+	data, diags := convertPolicyFromApiModel(responseData)
 	resp.Diagnostics.Append(diags...)
 	if diags.HasError() {
 		return
@@ -613,7 +580,7 @@ func (r *PolicyResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	rules, diags := convertToRulesUpdateApiModel(ctx, &data.Rules)
+	rules, diags := convertToRulesUpdateApiModel(&data.Rules)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -651,7 +618,7 @@ func (r *PolicyResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	data, diags = convertPolicyFromApiModel(ctx, createdPolicy)
+	data, diags = convertPolicyFromApiModel(createdPolicy)
 	resp.Diagnostics.Append(diags...)
 	if diags.HasError() {
 		return
