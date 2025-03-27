@@ -164,7 +164,7 @@ func (r *NetworkRouterResource) Create(ctx context.Context, req resource.CreateR
 	// Assign values from API response
 	data.ID = types.StringValue(responseData.Id)
 
-	diags = r.readIntoModel(&data)
+	diags = r.readNetworkRouterIntoModel(&data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -184,7 +184,7 @@ func (r *NetworkRouterResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	diags := r.readIntoModel(&data)
+	diags := r.readNetworkRouterIntoModel(&data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -194,7 +194,7 @@ func (r *NetworkRouterResource) Read(ctx context.Context, req resource.ReadReque
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-func (r *NetworkRouterResource) readIntoModel(data *NetworkRouterResourceModel) diag.Diagnostics {
+func (r *NetworkRouterResource) readNetworkRouterIntoModel(data *NetworkRouterResourceModel) diag.Diagnostics {
 	// Update network model
 	// Fetch data from API
 	diags := diag.Diagnostics{}
@@ -297,7 +297,7 @@ func (r *NetworkRouterResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	diags = r.readIntoModel(&data)
+	diags = r.readNetworkRouterIntoModel(&data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
