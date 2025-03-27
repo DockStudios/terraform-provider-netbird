@@ -205,6 +205,12 @@ func (r *NetworkResource) readIntoModel(ctx context.Context, data *NetworkResour
 		return diags
 	}
 
+	// Handle when resource does not exist
+	if responseBody == nil {
+		data.ID = types.StringNull()
+		return diags
+	}
+
 	var responseData netbirdApi.Network
 	if err := json.Unmarshal(responseBody, &responseData); err != nil {
 		diags.AddError("Error parsing response", err.Error())

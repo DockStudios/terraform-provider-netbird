@@ -238,6 +238,12 @@ func (r *GroupResource) Read(ctx context.Context, req resource.ReadRequest, resp
 		return
 	}
 
+	// Handle when resource does not exist
+	if responseBody == nil {
+		data.ID = types.StringNull()
+		return
+	}
+
 	var responseData netbirdApi.Group
 	if err := json.Unmarshal(responseBody, &responseData); err != nil {
 		resp.Diagnostics.AddError("Error parsing response", err.Error())

@@ -547,6 +547,12 @@ func (r *PolicyResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
+	// Handle when resource does not exist
+	if responseBody == nil {
+		data.ID = types.StringNull()
+		return
+	}
+
 	var responseData netbirdApi.Policy
 	if err := json.Unmarshal(responseBody, &responseData); err != nil {
 		resp.Diagnostics.AddError("Error parsing response", err.Error())
