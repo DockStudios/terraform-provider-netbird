@@ -436,7 +436,7 @@ func convertPolicyFromApiModel(data netbirdApi.Policy) (PolicyModel, diag.Diagno
 }
 
 func convertListToStringSlice(list basetypes.ListValue) ([]string, diag.Diagnostics) {
-	var result []string
+	result := []string{}
 	var diags diag.Diagnostics
 
 	// Handle null or unknown values

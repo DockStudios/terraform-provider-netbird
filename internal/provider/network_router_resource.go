@@ -69,19 +69,17 @@ func (r *NetworkRouterResource) Schema(ctx context.Context, req resource.SchemaR
 			"peer": schema.StringAttribute{
 				MarkdownDescription: "Peer ID associated with route. This property can not be set together with peer_groups",
 				Optional:            true,
-				Computed:            true,
 			},
 			"peer_groups": schema.ListAttribute{
 				ElementType:         types.StringType,
 				MarkdownDescription: "Peers Group IDs associated with route. This property can not be set together with peer",
-				Computed:            true,
 				Optional:            true,
 			},
 			"metric": schema.Int32Attribute{
 				MarkdownDescription: "Route metric number. Lowest number has higher priority",
-				Computed:            true,
 				Optional:            true,
 				Default:             int32default.StaticInt32(999),
+				Computed:            true,
 			},
 			"masquerade": schema.BoolAttribute{
 				MarkdownDescription: "Indicate if peer should masquerade traffic to this route's prefix",

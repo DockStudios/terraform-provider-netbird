@@ -63,9 +63,14 @@ func stringSliceToTerraform(apiValues []string) []types.String {
 
 func convertStringSliceToListValue(strings []string) (types.List, diag.Diagnostics) {
 	var stringValueList []attr.Value
+	var diags diag.Diagnostics
 	for _, val := range strings {
 		stringValueList = append(stringValueList, types.StringValue(val))
 	}
+	if len(stringValueList) == 0 {
+		return types.ListNull(types.StringType), diags
+	}
+
 	listValue, diags := types.ListValue(types.StringType, stringValueList)
 	if diags.HasError() {
 		return types.ListNull(types.StringType), diags
