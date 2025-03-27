@@ -107,7 +107,6 @@ func (p *NetbirdProvider) Configure(ctx context.Context, req provider.ConfigureR
 		)
 	}
 
-	// Example client configuration for data sources and resources
 	client := NewClient(endpoint, bearerToken, accessToken)
 	resp.DataSourceData = client
 	resp.ResourceData = client
@@ -125,9 +124,7 @@ func (p *NetbirdProvider) Resources(ctx context.Context) []func() resource.Resou
 }
 
 func (p *NetbirdProvider) EphemeralResources(ctx context.Context) []func() ephemeral.EphemeralResource {
-	return []func() ephemeral.EphemeralResource{
-		// NewExampleEphemeralResource,
-	}
+	return []func() ephemeral.EphemeralResource{}
 }
 
 func (p *NetbirdProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
@@ -138,9 +135,7 @@ func (p *NetbirdProvider) DataSources(ctx context.Context) []func() datasource.D
 }
 
 func (p *NetbirdProvider) Functions(ctx context.Context) []func() function.Function {
-	return []func() function.Function{
-		// NewExampleFunction,
-	}
+	return []func() function.Function{}
 }
 
 func New(version string) func() provider.Provider {

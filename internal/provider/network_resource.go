@@ -31,7 +31,6 @@ type NetworkResource struct {
 	client *Client
 }
 
-// ExampleResourceModel describes the resource data model.
 type NetworkResourceModel struct {
 	ID                types.String `tfsdk:"id"`
 	Name              types.String `tfsdk:"name"`

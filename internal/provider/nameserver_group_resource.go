@@ -36,7 +36,6 @@ type NameserverResourceModel struct {
 	Port   types.Int32  `tfsdk:"port"`
 }
 
-// ExampleResourceModel describes the resource data model.
 type NameserverGroupResourceModel struct {
 	ID                   types.String              `tfsdk:"id"`
 	Name                 types.String              `tfsdk:"name"`
