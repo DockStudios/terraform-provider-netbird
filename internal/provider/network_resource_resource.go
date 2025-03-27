@@ -224,7 +224,7 @@ func (r *NetworkResourceResource) readIntoModel(data *NetworkResourceResourceMod
 
 	// Update state with latest data
 	data.Name = types.StringValue(responseData.Name)
-	data.Description = derefString(responseData.Description)
+	data.Description = nullStringToEmptyString(derefString(responseData.Description))
 	peerGroups, diags := convertGroupMinimumToIdList(&responseData.Groups)
 	if diags.HasError() {
 		return diags

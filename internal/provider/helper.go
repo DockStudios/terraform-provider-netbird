@@ -92,3 +92,9 @@ func convertGroupMinimumToIdList(groupList *[]netbirdApi.GroupMinimum) (types.Li
 	return convertStringSliceToListValue(idList)
 }
 
+func nullStringToEmptyString(input types.String) types.String {
+	if input.ValueString() == "" {
+		return types.StringNull()
+	}
+	return input
+}

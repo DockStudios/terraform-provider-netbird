@@ -226,7 +226,7 @@ func (r *NetworkRouterResource) readIntoModel(data *NetworkRouterResourceModel) 
 	}
 
 	// Update state with latest data
-	data.Peer = derefString(responseData.Peer)
+	data.Peer = nullStringToEmptyString(derefString(responseData.Peer))
 	peerGroups, diags := convertStringSliceToListValue(derefStringSlice(responseData.PeerGroups))
 	if diags.HasError() {
 		return diags
