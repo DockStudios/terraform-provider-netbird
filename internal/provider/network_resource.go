@@ -14,7 +14,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 	netbirdApi "github.com/netbirdio/netbird/management/server/http/api"
 )
 
@@ -152,10 +151,6 @@ func (r *NetworkResource) Create(ctx context.Context, req resource.CreateRequest
 
 	// Assign values from API response
 	data.ID = types.StringValue(responseData["id"].(string))
-
-	// Write logs using the tflog package
-	// Documentation: https://terraform.io/plugin/log
-	tflog.Trace(ctx, "created a resource")
 
 	diags := r.readIntoModel(ctx, &data)
 	resp.Diagnostics.Append(diags...)

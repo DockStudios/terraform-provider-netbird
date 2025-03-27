@@ -120,6 +120,7 @@ func (p *NetbirdProvider) Resources(ctx context.Context) []func() resource.Resou
 		NewNetworkRouterResource,
 		NewNetworkResourceResource,
 		NewNameserverGroupResource,
+		NewDnsSettingsResource,
 	}
 }
 
