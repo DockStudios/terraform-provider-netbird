@@ -119,6 +119,7 @@ func (p *NetbirdProvider) Resources(ctx context.Context) []func() resource.Resou
 		NewGroupResource,
 		NewPolicyResource,
 		NewNetworkRouterResource,
+		NewNetworkResourceResource,
 	}
 }
 

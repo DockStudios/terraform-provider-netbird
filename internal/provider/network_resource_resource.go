@@ -11,7 +11,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int32default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -19,42 +18,42 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
-var _ resource.Resource = &NetworkRouterResource{}
-var _ resource.ResourceWithImportState = &NetworkRouterResource{}
+var _ resource.Resource = &NetworkResourceResource{}
+var _ resource.ResourceWithImportState = &NetworkResourceResource{}
 
-func NewNetworkRouterResource() resource.Resource {
-	return &NetworkRouterResource{}
+func NewNetworkResourceResource() resource.Resource {
+	return &NetworkResourceResource{}
 }
 
-// NetworkRouterResource defines the resource implementation.
-type NetworkRouterResource struct {
+// NetworkResourceResource defines the resource implementation.
+type NetworkResourceResource struct {
 	client *Client
 }
 
 // ExampleResourceModel describes the resource data model.
-type NetworkRouterResourceModel struct {
-	ID         types.String `tfsdk:"id"`
-	NetworkId  types.String `tfsdk:"network_id"`
-	Peer       types.String `tfsdk:"peer"`
-	PeerGroups types.List   `tfsdk:"peer_groups"`
-	Metric     types.Int32  `tfsdk:"metric"`
-	Masquerade types.Bool   `tfsdk:"masquerade"`
-	Enabled    types.Bool   `tfsdk:"enabled"`
+type NetworkResourceResourceModel struct {
+	ID          types.String `tfsdk:"id"`
+	NetworkId   types.String `tfsdk:"network_id"`
+	Name        types.String `tfsdk:"name"`
+	Description types.String `tfsdk:"description"`
+	Address     types.String `tfsdk:"address"`
+	PeerGroups  types.List   `tfsdk:"peer_groups"`
+	Enabled     types.Bool   `tfsdk:"enabled"`
 }
 
-func (r *NetworkRouterResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_network_router"
+func (r *NetworkResourceResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_network_resource"
 }
 
-func (r *NetworkRouterResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *NetworkResourceResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		// This description is used by the documentation generator and the language server.
-		MarkdownDescription: "NetworkRouter resource",
+		MarkdownDescription: "NetworkResource resource",
 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
-				MarkdownDescription: "NetworkRouter ID",
+				MarkdownDescription: "NetworkResource ID",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -66,34 +65,32 @@ func (r *NetworkRouterResource) Schema(ctx context.Context, req resource.SchemaR
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"peer": schema.StringAttribute{
-				MarkdownDescription: "Peer ID associated with route. This property can not be set together with peer_groups",
+			"name": schema.StringAttribute{
+				MarkdownDescription: "Network resource name",
+				Required:            true,
+			},
+			"description": schema.StringAttribute{
+				MarkdownDescription: "Network resource description",
 				Optional:            true,
+			},
+			"address": schema.StringAttribute{
+				MarkdownDescription: "Network resource address (either a direct host like 1.1.1.1 or 1.1.1.1/32, or a subnet like 192.168.178.0/24, or domains like example.com and *.example.com)",
+				Required:            true,
 			},
 			"peer_groups": schema.ListAttribute{
 				ElementType:         types.StringType,
-				MarkdownDescription: "Peers Group IDs associated with route. This property can not be set together with peer",
-				Optional:            true,
-			},
-			"metric": schema.Int32Attribute{
-				MarkdownDescription: "Route metric number. Lowest number has higher priority",
-				Optional:            true,
-				Default:             int32default.StaticInt32(999),
-				Computed:            true,
-			},
-			"masquerade": schema.BoolAttribute{
-				MarkdownDescription: "Indicate if peer should masquerade traffic to this route's prefix",
+				MarkdownDescription: "Group IDs containing the resource",
 				Required:            true,
 			},
 			"enabled": schema.BoolAttribute{
-				MarkdownDescription: "Network router status",
+				MarkdownDescription: "Network resource status",
 				Required:            true,
 			},
 		},
 	}
 }
 
-func (r *NetworkRouterResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *NetworkResourceResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {
 		return
@@ -113,8 +110,8 @@ func (r *NetworkRouterResource) Configure(ctx context.Context, req resource.Conf
 	r.client = client
 }
 
-func (r *NetworkRouterResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var data NetworkRouterResourceModel
+func (r *NetworkResourceResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var data NetworkResourceResourceModel
 
 	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
@@ -123,13 +120,13 @@ func (r *NetworkRouterResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	apiData, diags := routerModelToApiRequest(data)
+	apiData, diags := resourceModelToApiRequest(data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 	if apiData == nil {
-		resp.Diagnostics.AddError("nul pointer error", "Got nil pointer to NetworkRouterResourceModel")
+		resp.Diagnostics.AddError("nul pointer error", "Got nil pointer to NetworkResourceResourceModel")
 		return
 	}
 
@@ -140,7 +137,7 @@ func (r *NetworkRouterResource) Create(ctx context.Context, req resource.CreateR
 	}
 
 	// Make API request
-	reqURL := fmt.Sprintf("%s/api/networks/%s/routers", r.client.BaseUrl, data.NetworkId.ValueString())
+	reqURL := fmt.Sprintf("%s/api/networks/%s/resources", r.client.BaseUrl, data.NetworkId.ValueString())
 	httpReq, err := http.NewRequest("POST", reqURL, bytes.NewBuffer(requestBody))
 	if err != nil {
 		resp.Diagnostics.AddError("Error creating request", err.Error())
@@ -155,7 +152,7 @@ func (r *NetworkRouterResource) Create(ctx context.Context, req resource.CreateR
 	}
 
 	// Parse response
-	var responseData netbirdApi.NetworkRouter
+	var responseData netbirdApi.NetworkResource
 	if err := json.Unmarshal(responseBody, &responseData); err != nil {
 		resp.Diagnostics.AddError("Error parsing response", err.Error())
 		return
@@ -174,8 +171,8 @@ func (r *NetworkRouterResource) Create(ctx context.Context, req resource.CreateR
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-func (r *NetworkRouterResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var data NetworkRouterResourceModel
+func (r *NetworkResourceResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var data NetworkResourceResourceModel
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
@@ -194,14 +191,14 @@ func (r *NetworkRouterResource) Read(ctx context.Context, req resource.ReadReque
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-func (r *NetworkRouterResource) readIntoModel(data *NetworkRouterResourceModel) diag.Diagnostics {
+func (r *NetworkResourceResource) readIntoModel(data *NetworkResourceResourceModel) diag.Diagnostics {
 	// Update network model
 	// Fetch data from API
 	diags := diag.Diagnostics{}
 	if data == nil {
 		return diags
 	}
-	reqURL := fmt.Sprintf("%s/api/networks/%s/routers/%s", r.client.BaseUrl, data.NetworkId.ValueString(), data.ID.ValueString())
+	reqURL := fmt.Sprintf("%s/api/networks/%s/resources/%s", r.client.BaseUrl, data.NetworkId.ValueString(), data.ID.ValueString())
 	httpReq, err := http.NewRequest("GET", reqURL, nil)
 	if err != nil {
 		diags.AddError("Error creating request", err.Error())
@@ -219,28 +216,28 @@ func (r *NetworkRouterResource) readIntoModel(data *NetworkRouterResourceModel) 
 		return diags
 	}
 
-	var responseData netbirdApi.NetworkRouter
+	var responseData netbirdApi.NetworkResource
 	if err := json.Unmarshal(responseBody, &responseData); err != nil {
 		diags.AddError("Error parsing response", err.Error())
 		return diags
 	}
 
 	// Update state with latest data
-	data.Peer = derefString(responseData.Peer)
-	peerGroups, diags := convertStringSliceToListValue(derefStringSlice(responseData.PeerGroups))
+	data.Name = types.StringValue(responseData.Name)
+	data.Description = derefString(responseData.Description)
+	peerGroups, diags := convertGroupMinimumToIdList(&responseData.Groups)
 	if diags.HasError() {
 		return diags
 	}
 	data.PeerGroups = peerGroups
 
-	data.Metric = types.Int32Value(int32(responseData.Metric))
+	data.Address = types.StringValue(responseData.Address)
 	data.Enabled = types.BoolValue(responseData.Enabled)
-	data.Masquerade = types.BoolValue(responseData.Masquerade)
 
 	return diags
 }
 
-func routerModelToApiRequest(data NetworkRouterResourceModel) (*netbirdApi.NetworkRouterRequest, diag.Diagnostics) {
+func resourceModelToApiRequest(data NetworkResourceResourceModel) (*netbirdApi.NetworkResourceRequest, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	peerGroups, diags := convertListToStringSlice(data.PeerGroups)
@@ -248,17 +245,17 @@ func routerModelToApiRequest(data NetworkRouterResourceModel) (*netbirdApi.Netwo
 		return nil, diags
 	}
 
-	return &netbirdApi.NetworkRouterRequest{
-		Peer:       data.Peer.ValueStringPointer(),
-		PeerGroups: &peerGroups,
-		Metric:     int(data.Metric.ValueInt32()),
-		Masquerade: data.Masquerade.ValueBool(),
-		Enabled:    data.Enabled.ValueBool(),
+	return &netbirdApi.NetworkResourceRequest{
+		Name:        data.Name.ValueString(),
+		Description: data.Description.ValueStringPointer(),
+		Groups:      peerGroups,
+		Address:     data.Address.ValueString(),
+		Enabled:     data.Enabled.ValueBool(),
 	}, diags
 }
 
-func (r *NetworkRouterResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var data NetworkRouterResourceModel
+func (r *NetworkResourceResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var data NetworkResourceResourceModel
 
 	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
@@ -267,13 +264,13 @@ func (r *NetworkRouterResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	apiData, diags := routerModelToApiRequest(data)
+	apiData, diags := resourceModelToApiRequest(data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 	if apiData == nil {
-		resp.Diagnostics.AddError("nul pointer error", "Got nil pointer to NetworkRouterResourceModel")
+		resp.Diagnostics.AddError("nul pointer error", "Got nil pointer to NetworkResourceResourceModel")
 		return
 	}
 
@@ -283,7 +280,7 @@ func (r *NetworkRouterResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	reqURL := fmt.Sprintf("%s/api/networks/%s/routers/%s", r.client.BaseUrl, data.NetworkId.ValueString(), data.ID.ValueString())
+	reqURL := fmt.Sprintf("%s/api/networks/%s/resources/%s", r.client.BaseUrl, data.NetworkId.ValueString(), data.ID.ValueString())
 	httpReq, err := http.NewRequest("PUT", reqURL, bytes.NewBuffer(requestBody))
 	if err != nil {
 		resp.Diagnostics.AddError("Error creating request", err.Error())
@@ -307,8 +304,8 @@ func (r *NetworkRouterResource) Update(ctx context.Context, req resource.UpdateR
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-func (r *NetworkRouterResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var data NetworkRouterResourceModel
+func (r *NetworkResourceResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var data NetworkResourceResourceModel
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
@@ -317,7 +314,7 @@ func (r *NetworkRouterResource) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
-	reqURL := fmt.Sprintf("%s/api/networks/%s/routers/%s", r.client.BaseUrl, data.NetworkId.ValueString(), data.ID.ValueString())
+	reqURL := fmt.Sprintf("%s/api/networks/%s/resources/%s", r.client.BaseUrl, data.NetworkId.ValueString(), data.ID.ValueString())
 	httpReq, err := http.NewRequest("DELETE", reqURL, nil)
 	if err != nil {
 		resp.Diagnostics.AddError("Error creating request", err.Error())
@@ -333,6 +330,6 @@ func (r *NetworkRouterResource) Delete(ctx context.Context, req resource.DeleteR
 	resp.State.RemoveResource(ctx)
 }
 
-func (r *NetworkRouterResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *NetworkResourceResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

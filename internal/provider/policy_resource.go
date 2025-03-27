@@ -348,20 +348,6 @@ func convertPortRangesToList(portRanges *[]netbirdApi.RulePortRange) []PortRange
 	return terraformPortRanges
 }
 
-func convertGroupMinimumToIdList(groupList *[]netbirdApi.GroupMinimum) (types.List, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	var idList []string
-	if groupList == nil {
-		return types.ListNull(types.StringType), diags
-	}
-
-	for _, group := range *groupList {
-		idList = append(idList, group.Id)
-	}
-
-	return convertStringSliceToListValue(idList)
-}
-
 func convertRulesFromAPI(data *[]netbirdApi.PolicyRule) ([]PolicyRuleModel, diag.Diagnostics) {
 	var rules []PolicyRuleModel
 	var diags diag.Diagnostics

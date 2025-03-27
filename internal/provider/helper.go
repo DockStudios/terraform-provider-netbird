@@ -77,3 +77,18 @@ func convertStringSliceToListValue(strings []string) (types.List, diag.Diagnosti
 	}
 	return listValue, diags
 }
+
+func convertGroupMinimumToIdList(groupList *[]netbirdApi.GroupMinimum) (types.List, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	var idList []string
+	if groupList == nil {
+		return types.ListNull(types.StringType), diags
+	}
+
+	for _, group := range *groupList {
+		idList = append(idList, group.Id)
+	}
+
+	return convertStringSliceToListValue(idList)
+}
+
