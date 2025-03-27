@@ -16,6 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	netbirdApi "github.com/netbirdio/netbird/management/server/http/api"
 )
@@ -146,6 +147,7 @@ func (r *PolicyResource) Schema(ctx context.Context, req resource.SchemaRequest,
 						"ports": schema.ListAttribute{
 							ElementType:         types.StringType,
 							Optional:            true,
+							Computed:            true,
 							MarkdownDescription: "List of affected ports",
 						},
 						"port_ranges": schema.ListNestedAttribute{
@@ -268,8 +270,8 @@ func convertToRulesUpdateApiModel(ctx context.Context, modelRules *[]PolicyRuleM
 	var diags diag.Diagnostics
 	for _, modelRule := range *modelRules {
 
-		var ports []string
-		diags.Append(modelRule.Ports.ElementsAs(ctx, &ports, false)...)
+		ports, diags := convertListToStringSlice(modelRule.Ports)
+		diags.Append(diags...)
 		if diags.HasError() {
 			return apiRules, diags
 		}
@@ -279,8 +281,8 @@ func convertToRulesUpdateApiModel(ctx context.Context, modelRules *[]PolicyRuleM
 			return apiRules, diags
 		}
 
-		var sources []string
-		diags.Append(modelRule.Sources.ElementsAs(ctx, &sources, false)...)
+		sources, diags := convertListToStringSlice(modelRule.Sources)
+		diags.Append(diags...)
 		if diags.HasError() {
 			return apiRules, diags
 		}
@@ -290,8 +292,7 @@ func convertToRulesUpdateApiModel(ctx context.Context, modelRules *[]PolicyRuleM
 			return apiRules, diags
 		}
 
-		var destinations []string
-		diags.Append(modelRule.Destinations.ElementsAs(ctx, &destinations, false)...)
+		destinations, diags := convertListToStringSlice(modelRule.Destinations)
 		if diags.HasError() {
 			return apiRules, diags
 		}
@@ -467,6 +468,29 @@ func convertPolicyFromApiModel(ctx context.Context, data netbirdApi.Policy) (Pol
 	return policyModel, diags
 }
 
+func convertListToStringSlice(list basetypes.ListValue) ([]string, diag.Diagnostics) {
+	var result []string
+	var diags diag.Diagnostics
+
+	// Handle null or unknown values
+	if list.IsNull() || list.IsUnknown() {
+		return result, nil
+	}
+
+	// Extract elements
+	elements := list.Elements() // Get list of attr.Value
+	for _, elem := range elements {
+		strVal, ok := elem.(basetypes.StringValue)
+		if !ok {
+			diags.AddError("Unexpected type", fmt.Sprintf("unexpected type: %T", elem))
+			return nil, diags
+		}
+		result = append(result, strVal.ValueString()) // Convert to native Go string
+	}
+
+	return result, nil
+}
+
 func (r *PolicyResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data PolicyModel
 
@@ -478,8 +502,8 @@ func (r *PolicyResource) Create(ctx context.Context, req resource.CreateRequest,
 	}
 
 	// Convert Terraform list of peers to a Go slice
-	var sourcePostureCheck []string
-	resp.Diagnostics.Append(data.SourcePostureChecks.ElementsAs(ctx, &sourcePostureCheck, false)...)
+	sourcePostureChecks, diags := convertListToStringSlice(data.SourcePostureChecks)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -494,7 +518,7 @@ func (r *PolicyResource) Create(ctx context.Context, req resource.CreateRequest,
 		Name:                data.Name.ValueString(),
 		Description:         data.Description.ValueStringPointer(),
 		Enabled:             data.Enabled.ValueBool(),
-		SourcePostureChecks: &sourcePostureCheck,
+		SourcePostureChecks: &sourcePostureChecks,
 		Rules:               rules,
 	}
 	jsonData, err := json.Marshal(policy)
@@ -583,8 +607,8 @@ func (r *PolicyResource) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// Convert Terraform list of peers to a Go slice
-	var sourcePostureCheck []string
-	resp.Diagnostics.Append(data.SourcePostureChecks.ElementsAs(ctx, &sourcePostureCheck, false)...)
+	sourcePostureChecks, diags := convertListToStringSlice(data.SourcePostureChecks)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -599,7 +623,7 @@ func (r *PolicyResource) Update(ctx context.Context, req resource.UpdateRequest,
 		Name:                data.Name.ValueString(),
 		Description:         data.Description.ValueStringPointer(),
 		Enabled:             data.Enabled.ValueBool(),
-		SourcePostureChecks: &sourcePostureCheck,
+		SourcePostureChecks: &sourcePostureChecks,
 		Rules:               rules,
 	}
 	jsonData, err := json.Marshal(policy)
