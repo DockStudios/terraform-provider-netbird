@@ -317,7 +317,6 @@ func convertToRulesUpdateApiModel(modelRules *[]PolicyRuleModel) ([]netbirdApi.P
 			Destinations:        &destinations,
 			DestinationResource: destinationResource,
 		})
-		return apiRules, diags
 	}
 
 	return apiRules, diags
