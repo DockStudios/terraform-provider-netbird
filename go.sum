@@ -126,6 +126,8 @@ github.com/mitchellh/reflectwalk v1.0.2 h1:G2LzWKi524PWgd3mLHV8Y5k7s6XUvT0Gef6zx
 github.com/mitchellh/reflectwalk v1.0.2/go.mod h1:mSTlrgnPZtwu0c4WaC2kGObEpuNDbx0jmZXqmk4esnw=
 github.com/netbirdio/netbird v0.39.1 h1:yPOjaOb5eVKYBYTsuchI5xyOBgpxg8ygFF9EioeUYFw=
 github.com/netbirdio/netbird v0.39.1/go.mod h1:oMCwG1daQNBKX+W9/d9EGliCyGpL1a1f9RDk5RqJiZk=
+github.com/netbirdio/netbird v0.40.1 h1:h8lW0f/AtGHzN4KE8Ej5bInSf6TOd07DCGf26+ZerAM=
+github.com/netbirdio/netbird v0.40.1/go.mod h1:2fRn2GEHk3leZH8nBjLjjysjSwmM+tPzI/YGATmE5Gw=
 github.com/oklog/run v1.0.0 h1:Ru7dDtJNOyC66gQ5dQmaCa0qIsAUFY3sFpK1Xk8igrw=
 github.com/oklog/run v1.0.0/go.mod h1:dlhp/R75TPv97u0XWUtDeV/lRKWPKSdTuV0TZvrmrQA=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
